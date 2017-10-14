@@ -2,9 +2,16 @@ const Koa = require('koa')
 const app = new Koa()
 const views = require('koa-views')
 const json = require('koa-json')
+const co = require('co')
+const convert = require('koa-convert')
 const onerror = require('koa-onerror')
 const bodyparser = require('koa-bodyparser')
+const koaBody = require('koa-body')
 const logger = require('koa-logger')
+// log middleware
+const loggers = require('./middleware/loggers')
+const cors = require('koa-cors')
+const db = require('./config/dbConfig')
 
 const index = require('./routes/index')
 const users = require('./routes/users')
@@ -13,18 +20,22 @@ const users = require('./routes/users')
 onerror(app)
 
 // middlewares
-app.use(bodyparser({
-  enableTypes:['json', 'form', 'text']
-}))
-app.use(json())
-app.use(logger())
-app.use(require('koa-static')(__dirname + '/public'))
-
+app.use(convert.compose(
+  koaBody({ multipart: true }),
+  bodyparser,
+  json(),
+  logger(),
+  cors(),
+))
+// middlewares
+app.use(convert(require('koa-static')(__dirname + '/public')))
+// local log
+app.use(convert(loggers()))
 app.use(views(__dirname + '/views', {
   extension: 'pug'
 }))
 
-// logger
+
 app.use(async (ctx, next) => {
   const start = new Date()
   await next()
@@ -39,6 +50,9 @@ app.use(users.routes(), users.allowedMethods())
 // error-handling
 app.on('error', (err, ctx) => {
   console.error('server error', err, ctx)
-});
+})
+
+// mongodb connect
+db.connect()
 
 module.exports = app
