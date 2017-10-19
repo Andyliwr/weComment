@@ -1,7 +1,8 @@
-let dbUrl = "mongodb://admin:123456@ds036577.mlab.com:36577/we_comment"
+let config = require('../../config')
 let mongoose = require("mongoose")
+
 exports.connect = function (request, response) {
-  mongoose.connect(dbUrl, { useMongoClient: true }) // useMongoClient防止报错
+  mongoose.connect(config.mongodb_url, { useMongoClient: true }) // useMongoClient防止报错
   let db = mongoose.connection
   db.on('error', console.error.bind(console, 'Database connected error:'))
   db.once('open', function (callback) {
